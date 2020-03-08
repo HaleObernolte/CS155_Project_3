@@ -59,3 +59,24 @@ def get_sonnets(f_name, max_words=4000):
         if (not cont):
             break        
     return sonnets, obs_map
+
+
+# Returns a map from words to their number of syllables
+#
+# Currently ignores words having different syllables when used at the end.
+def get_syllable_map(f_name):
+    f = open(f_name, "r")
+    syl_map = {}
+    for line in f:
+        words = line.split()
+        w = words[0]
+        w = w.translate(str.maketrans('', '', string.punctuation))
+        w = w.lower()
+        n_str = words[-1]
+        if "E" in n_str:
+            n_str = words[-2]
+        n = int(n_str)
+        if w not in syl_map:
+            syl_map[w] = n
+    return syl_map
+    

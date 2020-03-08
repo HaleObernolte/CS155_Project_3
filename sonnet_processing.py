@@ -20,7 +20,7 @@ import string
 
 # Returns a list of all sonnets in file given by f_name.
 #    In this case, each sonnet is just a list of words
-def get_sonnets(f_name):
+def get_sonnets(f_name, max_words=4000):
     f = open(f_name, "r")
     # Skip first sonnet number
     f.readline()
@@ -28,7 +28,7 @@ def get_sonnets(f_name):
     obs_counter = 0
     obs_map = {}    
     sonnets = []
-    while (True):
+    while (obs_counter < max_words):
         sonnet = []
         cont = True
         while (True):

@@ -25,6 +25,8 @@ def get_sonnets(f_name):
     # Skip first sonnet number
     f.readline()
     # Parse sonnets
+    obs_counter = 0
+    obs_map = {}    
     sonnets = []
     while (True):
         sonnet = []
@@ -45,9 +47,15 @@ def get_sonnets(f_name):
             words = line.split()
             for word in words:
                 w = word.translate(str.maketrans('', '', string.punctuation))
-                sonnet.append(w.lower())
+                w = w.lower()
+                if w not in obs_map:
+                    # Add unique words to the observations map.
+                    obs_map[w] = obs_counter
+                    obs_counter += 1
+                # Add the encoded word.
+                sonnet.append(obs_map[w])
         sonnets.append(sonnet)
         # Check for EOF
         if (not cont):
             break        
-    return sonnets
+    return sonnets, obs_map

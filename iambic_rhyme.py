@@ -128,6 +128,21 @@ def add_word(current_state,A,O):
     current_state = np.random.choice(num_states, p=A[int(current_state)])
     return token,current_state
 
+def add_word_backward(current_state,A,O):
+    num_states = len(A)
+    num_tokens = len(O[0])
+    # Select random token from current state based on emission matrix.
+    token = int(np.random.choice(num_tokens, p=O[int(current_state)]))
+    # Backwards generate previous state
+    t_probs = []
+    for s in range(num_states):
+        t_probs.append(A[s][current_state])
+    t_sum = sum(t_probs)
+    for i in range(num_states):
+        t_probs[i] = t_probs[i] / t_sum
+    prev_state = np.random.choice(num_states, p=t_probs)
+    return token,prev_state    
+
 
 def syllable_count(words,syllable_map):
     count = 0
@@ -142,7 +157,7 @@ def make_rhyme_iambic_line(rhyme_word,syllable_map,stress_map,length=10):
     while (syllable_count(words, syllable_map) != 10 or
             check_iambic(words, stress_map, syllable_map) is not True):
         while syllable_count(words, syllable_map) < 10:
-            token, current_state = add_word(current_state)
+            token, current_state = add_word_backward(current_state)
             words += token
     words.reverse()
     line = ""
@@ -188,7 +203,7 @@ def make_rhyme_iambic_sonnet(rhymes,stress_map):
 
     
 
-data_path = '../data/'
+data_path = 'data/'
 rhymes = sp.get_rhymes(data_path+'shakespeare.txt')
 
 # choose 1 from below

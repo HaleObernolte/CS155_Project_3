@@ -88,7 +88,7 @@ def get_syllable_map(f_name):
 # Each rhyme pair is repeated in the list whenever it is een so that taking a
 # random rhyme from the list is sampling from Shakespeare's distribution.
 # NOTE: Assumes you have deleted Sonnets 99 and 123
-def get_rhymes(f_name):
+def get_rhymes(f_name, add_revs=False):
     f = open(f_name, "r")
     rhymes = []
     line_no = 1
@@ -107,17 +107,32 @@ def get_rhymes(f_name):
             a = a + (w,)
             if (len(a) == 2):
                 rhymes.append(a)
+                if (add_revs):
+                    rev = ()
+                    rev += (a[1],)
+                    rev += (a[0],)
+                    rhymes.append(rev)
                 a = ()
         elif (line_no == 2 or line_no == 4 or line_no == 6 or line_no == 8 or line_no == 10 or line_no == 12):
             b = b + (w,)
             if (len(b) == 2):
                 rhymes.append(b)
+                if (add_revs):
+                    rev = ()
+                    rev += (b[1],)
+                    rev += (b[0],)
+                    rhymes.append(rev)                
                 b = ()
         elif (line_no == 13):
             g = g + (w,)
         else:
             g = g + (w,)
             rhymes.append(g)
+            if (add_revs):
+                rev = ()
+                rev += (g[1],)
+                rev += (g[0],)
+                rhymes.append(rev)            
             g = ()
             line_no = 0
         line_no += 1

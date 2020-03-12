@@ -58,8 +58,30 @@ def get_char_sonnets(f_name, max_words=4000):
 def predictSonnet(allSonnetText, maxlen, chars, char_indices, indices_char, model):
     ''' Using the model and other parameters, this is an attempt to predict '''
     ''' a random sonnet. '''
+    poem = ''
+
+    sentence = 'Shall I compare thee to a summer\'s day?\n'
+    lines = 1
+
+    while lines < 14:
+        x_pred = np.zeros((1, maxlen, len(chars)), dtype=np.bool)
+        subsection = sentence[-40:]
+        #print(subsection)
+        #print(len(subsection))
+        for t, char in enumerate(subsection):
+            x_pred[0, t, char_indices[char]] = 1.
+        probChars = model.predict(x_pred)[0]
+        # maxProb = max(probChars)
+        indexProb = sample(probChars)
+
+        newchar = indices_char[indexProb]
+        sentence = sentence + newchar
+        if newchar == '\n':
+            lines += 1
+
+    print(sentence)
     # Draw softmax samples from trained model
-    start_index = random.randint(0, len(allSonnetText) - maxlen - 1)
+    '''start_index = random.randint(0, len(allSonnetText) - maxlen - 1)
     print(maxlen)
     # New Poem
     poem = ''
@@ -129,18 +151,18 @@ def predictSonnet(allSonnetText, maxlen, chars, char_indices, indices_char, mode
         poem += newSentence
         poem += "\n"
         #print("howdy2")
-        #print(poem)
-    print(newSentence)
-    print("----------------------------------------------------")
-    print(poem)
-    print("----------------------------------------------------")
+        #print(poem)'''
+    #print(newSentence)
+    #print("----------------------------------------------------")
+    #print(poem)
+    #print("----------------------------------------------------")
 
 
 
 def rnn_shakespeare_sonnet():
     ''' Deal with the data and engine running the model. '''
     # Load in everything
-    sonnets, obs_map = sp.get_sonnets("data/shakespeare.txt", 900)
+    sonnetsAsNums, obs_map = sp.get_sonnets("data/shakespeare.txt", 900)
     #print(obs_map)
     obs_map_r = {}
     sonnets = get_char_sonnets("data/shakespeare.txt", max_words=900)
@@ -148,14 +170,14 @@ def rnn_shakespeare_sonnet():
         obs_map_r[obs_map[key]] = key
     syl_map = sp.get_syllable_map("data/Syllable_dictionary.txt")
     # Train HMM
-    RNN(sonnets)
+    RNN(sonnets, sonnetsAsNums, obs_map)
 
 
-def RNN(sonnets):
+def RNN(sonnets, sonnetsAsNums, obs_map):
     ''' Runs the RNN model. '''
     # Note: ADJUST indicates parameters that can be adjusted
 
-
+    sizeOfVocab = len(obs_map)
     # 1. PREPARE THE INPUT
     allSonnetText = ''
     endOfSonnetChar = '$'
@@ -182,20 +204,39 @@ def RNN(sonnets):
     # Train x is sequences of maxlen
     # ADJUST????
     step = 3
-    sentences = []
+    sequences = []
     next_chars = []
-    for i in range(0, len(allSonnetText) - maxlen, step):
-        sentences.append(allSonnetText[i: i + maxlen])
-        next_chars.append(allSonnetText[i + maxlen])
+    for sonnet in sonnets:
+        for i in range(0, len(sonnet) - maxlen, step):
+            sequences.append(list(sonnet[i: i + maxlen]))
+            next_chars.append(sonnet[i + maxlen])
     # x: length(input, maximum length of sequence, length of all chars)
-    x = np.zeros((len(sentences), maxlen, len(chars)), dtype=np.bool)
-    # y: length(input, length of all chars)
-    y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
-    for i, sentence in enumerate(sentences):
-        for t, char in enumerate(sentence):
+    #print(sequences[0])
+    #print(len(sequences))
+    #print(len(sequences[0]))
+    #print(len(sequences[0][0]))
+    #print(len(sequences[0][[0]]))
+    #x = np.array(sequences)
+    #print(x.ndim)
+    #print(x)
+    #x = np.reshape(x, (x.shape[0], 1, x.shape[1]))
+    #print(x.shape)
+    #print(len(x[0]))
+    #x = np.reshape()
+    #y = np.array(next_chars)
+    #print(y.shape)
+    # predict on 1, maxlen is 40, len(chars)
+    x = np.zeros((len(sequences), maxlen, len(chars)), dtype=np.bool)
+    #y: length(input, length of all chars)
+    y = np.zeros((len(sequences), len(chars)), dtype=np.bool)
+    for i, seq in enumerate(sequences):
+        for t, char in enumerate(seq):
+            #print(seq, ", ", str(i) + ", ", char, ", " + str(t))
             # ith sequence, tth char in sequence, the char's index in dict
             x[i, t, char_indices[char]] = 1
         # ith sequence, the char's index in dict
+        #print(next_chars[i])
+        #print(char_indices[next_chars[i]])
         y[i, char_indices[next_chars[i]]] = 1
 
     # 2. CREATE THE MODEL AND FIT THE DATA
@@ -216,6 +257,7 @@ def RNN(sonnets):
     EarlyStopping(monitor='val_loss')
     model.fit(x, y, batch_size=20, epochs=60)
 
+    #print(model.predict(x_pred))
     # 3. EXAMPLE 1 WHERE WE TRY TO GENERATE 40 CHARS
     # 40 random characters
 
@@ -225,11 +267,17 @@ def RNN(sonnets):
     return predictedPoem
 
 
+# https://keras.io/examples/lstm_text_generation/
 def sample(preds, temperature=1.0):
     ''' Sample function from a probability array '''
     # helper function to sample an index from a probability array
     preds = np.asarray(preds).astype('float64')
-    preds = np.log(preds) / temperature
+    for i in range(len(preds)):
+        if preds[i] > 0:
+            preds[i] = np.log(preds[i])
+        else:
+            preds[i] = 0
+    preds = preds / temperature
     exp_preds = np.exp(preds)
     preds = exp_preds / np.sum(exp_preds)
     probas = np.random.multinomial(1, preds, 1)

@@ -11,7 +11,7 @@ import sonnet_processing as sp
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
-from keras.optimizers import RMSprop
+from keras.optimizers import RMSprop, Adam
 from keras.callbacks.callbacks import EarlyStopping
 import random
 import numpy as np
@@ -61,7 +61,7 @@ def predictSonnet(allSonnetText, maxlen, chars, char_indices, indices_char, mode
     poem = ''
 
     sentence = 'Shall I compare thee to a summer\'s day?\n'
-    lines = 1
+    lines = 0
 
     while lines < 14:
         x_pred = np.zeros((1, maxlen, len(chars)), dtype=np.bool)
@@ -72,7 +72,7 @@ def predictSonnet(allSonnetText, maxlen, chars, char_indices, indices_char, mode
             x_pred[0, t, char_indices[char]] = 1.
         probChars = model.predict(x_pred)[0]
         # maxProb = max(probChars)
-        indexProb = sample(probChars)
+        indexProb = sample(probChars, temperature=0.5)
 
         newchar = indices_char[indexProb]
         sentence = sentence + newchar
@@ -80,6 +80,7 @@ def predictSonnet(allSonnetText, maxlen, chars, char_indices, indices_char, mode
             lines += 1
 
     print(sentence)
+    print(sentence[sentence.index('\n')+1:])
     # Draw softmax samples from trained model
     '''start_index = random.randint(0, len(allSonnetText) - maxlen - 1)
     print(maxlen)
@@ -203,7 +204,7 @@ def RNN(sonnets, sonnetsAsNums, obs_map):
 
     # Train x is sequences of maxlen
     # ADJUST????
-    step = 3
+    step = 1
     sequences = []
     next_chars = []
     for sonnet in sonnets:
@@ -246,16 +247,16 @@ def RNN(sonnets, sonnetsAsNums, obs_map):
     model.add(LSTM(128, input_shape=(maxlen, len(chars))))
     # fully connected dense output layer with softmax nonlinearity
     model.add(Dense(len(chars), activation='softmax'))
-
-    optimizer = RMSprop(learning_rate=0.01)
+    print("optimizer: Adam eta=0.0005")
+    optimizer = Adam(learning_rate=0.001)
     # minimize categorical cross-entropy
     model.compile(loss='categorical_crossentropy', optimizer=optimizer)
     # train for sufficient number of epochs to converge loss try different numbers,
     # graph
     # ADJUST EPOCHS
     # POSSIBLY ADJUST batch_size
-    EarlyStopping(monitor='val_loss')
-    model.fit(x, y, batch_size=20, epochs=60)
+    es = EarlyStopping(monitor='loss')
+    model.fit(x, y, batch_size=40, epochs=500, callbacks=[es])
 
     #print(model.predict(x_pred))
     # 3. EXAMPLE 1 WHERE WE TRY TO GENERATE 40 CHARS

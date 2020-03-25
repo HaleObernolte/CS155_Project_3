@@ -61,7 +61,7 @@ def predictSonnet(allSonnetText, maxlen, chars, char_indices, indices_char, mode
     poem = ''
 
     sentence = 'Shall I compare thee to a summer\'s day?\n'
-    lines = 0
+    lines = 1
 
     while lines < 14:
         x_pred = np.zeros((1, maxlen, len(chars)), dtype=np.bool)
@@ -72,7 +72,7 @@ def predictSonnet(allSonnetText, maxlen, chars, char_indices, indices_char, mode
             x_pred[0, t, char_indices[char]] = 1.
         probChars = model.predict(x_pred)[0]
         # maxProb = max(probChars)
-        indexProb = sample(probChars, temperature=0.5)
+        indexProb = sample(probChars, temperature=0.75)
 
         newchar = indices_char[indexProb]
         sentence = sentence + newchar
@@ -80,7 +80,7 @@ def predictSonnet(allSonnetText, maxlen, chars, char_indices, indices_char, mode
             lines += 1
 
     print(sentence)
-    print(sentence[sentence.index('\n')+1:])
+    #print(sentence[sentence.index('\n')+1:])
     # Draw softmax samples from trained model
     '''start_index = random.randint(0, len(allSonnetText) - maxlen - 1)
     print(maxlen)
@@ -247,7 +247,7 @@ def RNN(sonnets, sonnetsAsNums, obs_map):
     model.add(LSTM(128, input_shape=(maxlen, len(chars))))
     # fully connected dense output layer with softmax nonlinearity
     model.add(Dense(len(chars), activation='softmax'))
-    print("optimizer: Adam eta=0.0005")
+    print("optimizer: Adam eta=0.001, temp = 0.75")
     optimizer = Adam(learning_rate=0.001)
     # minimize categorical cross-entropy
     model.compile(loss='categorical_crossentropy', optimizer=optimizer)
